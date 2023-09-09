@@ -7,7 +7,7 @@ const port = 3000;
 app.use(fileUpload());
 
 // Serve static files (e.g., uploaded files)
-app.use(express.static('uploads'));
+app.use(express.static('public'));
 
 app.get('/', (req, res) => {
     
@@ -20,19 +20,34 @@ app.post('/upload', (req, res) => {
     return res.status(400).send('No files were uploaded.');
   }
 
-  // Access the uploaded file using the 'file' field name from the HTML form
-  const uploadedFile = req.files.file;
+  // Access the uploaded files using the 'files' field name from the HTML form
+  const uploadedFiles = req.files;
 
-  // Move the file to the 'uploads' directory
-  uploadedFile.mv(`uploads/${uploadedFile.name}`, (err) => {
-    if (err) {
-      return res.status(500).send(err);
+  // Loop through the uploaded files and move them to the 'uploads' directory
+  for (const fieldName in uploadedFiles) {
+    const file = uploadedFiles[fieldName];
+
+    // Check if the file field is an array (multiple files with the same field name)
+    if (Array.isArray(file)) {
+      file.forEach((singleFile) => {
+        singleFile.mv(`uploads/${singleFile.name}`, (err) => {
+          if (err) {
+            return res.status(500).send(err);
+          }
+        });
+      });
+    } else {
+      // Handle a single file upload
+      file.mv(`uploads/${file.name}`, (err) => {
+        if (err) {
+          return res.status(500).send(err);
+        }
+      });
     }
+  }
 
-    res.send('File uploaded successfully!');
-  });
+  res.send('Files uploaded successfully!');
 });
-
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
